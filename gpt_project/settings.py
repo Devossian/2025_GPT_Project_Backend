@@ -126,3 +126,11 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 AUTH_USER_MODEL = 'account.CustomUser'
+
+MODEL_COST = {
+    "gpt-4o": 20,
+    "gpt-4o-mini": 5,
+    "o1": 120,
+    "o1-mini": 25,
+    "gpt-3.5-turbo": 5,
+}
