@@ -4,7 +4,6 @@ from django.conf import settings
 from django.db import transaction
 from django.db.models import F
 from rest_framework.views import APIView
-from rest_framework.response import Response
 import json
 from account.models import CustomUser
 from .api_key_manager import acquire_api_key, release_api_key
