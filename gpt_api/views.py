@@ -33,7 +33,7 @@ class PostGPTAPI(APIView): #
             # 트랜잭션 원자성 보장
             with transaction.atomic():
                 # 유저 검색
-                user = CustomUser.objects.select_for_update().get(id=userid) # 사용 레코드 LOCK
+                user = CustomUser.objects.select_for_update().get(id=userid) # 사용 모델 LOCK
                 print(user.username)
 
                 # 잔고 확인
