@@ -1,4 +1,4 @@
-from django.db import models
+from django.db import models, transaction
 from django.utils.timezone import now
 from account.models import CustomUser
 import uuid
@@ -18,18 +18,22 @@ class ChatRoom(models.Model):
 # 채팅 메시지 모델
 class ChatMessage(models.Model):
     room = models.ForeignKey(ChatRoom, on_delete=models.CASCADE, related_name="message")
-    sender = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    senderid = models.IntegerField(null=True, blank=True)
     content = models.TextField()
     timestamp = models.DateTimeField(auto_now_add=True)
 
     def save(self, *args, **kwargs):
-        # 메시지를 저장
-        super().save(*args, **kwargs)
+        with transaction.atomic():
+            if not self.pk:  # 새로 생성된 메시지일 경우에만 실행
+                # 메시지를 저장
+                super().save(*args, **kwargs)
 
-        # 관련된 ChatRoom의 timestamp를 현재 시간으로 업데이트
-        self.room.timestamp = now()
-        self.room.messages += 1  # 메시지 카운트 증가
-        self.room.save()
+                # 관련된 ChatRoom의 timestamp를 현재 시간으로 업데이트
+                self.room.timestamp = now()
+                self.room.messages = self.room.messages + 1 # 메시지 카운트 증가
+                self.room.save()
+            else:
+                super().save(*args, **kwargs)
     
     def __str__(self):
-        return f"{self.sender},{self.room.name},{self.content[:20]},{self.timestamp}"
+        return f"{self.senderid},{self.room.name},{self.content[:20]},{self.timestamp}"

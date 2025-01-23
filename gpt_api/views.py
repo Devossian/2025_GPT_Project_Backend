@@ -6,20 +6,31 @@ from django.db.models import F
 from rest_framework.views import APIView
 import json
 from account.models import CustomUser
+from chat.models import ChatMessage, ChatRoom
 from .api_key_manager import acquire_api_key, release_api_key
 import openai
+import time
 
 class PostGPTAPI(APIView): # 
     def post(self, request):
-        exceeded = False
         data = json.loads(request.body)
-        userid = data.get('userid')
         message  = data.get('message')
         model = data.get('model')
+        # 채팅방 정보 받기
+        roomid = data.get('roomid')
+        room = ChatRoom.objects.get(roomid=roomid)
+        # 그리고 유저 찾기
+        userid = room.user.id
+        timestamp = time.time()
+        print(userid)
 
         # 데이터 누락시 400에러
         if not userid or not message or not model:
-            return JsonResponse({'message': 'username 또는 message가 누락되었습니다.'}, status=400) 
+            return JsonResponse({'message': '누락된 parameter가 있습니다.'}, status=400)
+        
+        # 채팅 송신 기록 남기기
+        chatmessage = ChatMessage.objects.create(room=room, content=message, senderid=userid, timestamp=timestamp)
+        chatmessage.save()
         
         # api 키 습득
         api_key = acquire_api_key()
@@ -49,14 +60,18 @@ class PostGPTAPI(APIView): #
                         {"role": "user", "content": message}
                     ]
                 )
-                gpt_answer = completion.choices[0].message
+                gpt_answer = completion.choices[0].message.content.strip()
+
+                # 채팅 수신 기록 남기기
+                chatmessage = ChatMessage.objects.create(room=room, content=gpt_answer, senderid=0, timestamp=timestamp)
+                chatmessage.save()
 
                 # 잔고 차감
                 user.balance = user.balance - settings.MODEL_COST[model]
                 user.save()
 
                 return JsonResponse({
-                    'message': gpt_answer.content.strip()
+                    'message': gpt_answer
                 }, status=200)
         # 유저를 찾을 수 없는 경우
         except CustomUser.DoesNotExist:
