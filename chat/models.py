@@ -22,13 +22,14 @@ class ChatMessage(models.Model):
     content = models.TextField()
     timestamp = models.DateTimeField(auto_now_add=True)
 
+    # 레코드가 생성될 때 ChatRoom 레코드에 메세지 수 및 최종 수정 시간 기록
     def save(self, *args, **kwargs):
         with transaction.atomic():
-            if not self.pk:  # 새로 생성된 메시지일 경우에만 실행
+            if not self.pk:  # 새로 생성된 메시지일 경우(아직 레코드에 존재하지 않는 경우)에만 실행
                 # 메시지를 저장
                 super().save(*args, **kwargs)
 
-                # 관련된 ChatRoom의 timestamp를 현재 시간으로 업데이트
+                # FK ChatRoom의 timestamp를 현재 시간으로 업데이트
                 self.room.timestamp = now()
                 self.room.messages = self.room.messages + 1 # 메시지 카운트 증가
                 self.room.save()
