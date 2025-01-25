@@ -6,6 +6,7 @@ from account.utils import (
     check_username,
     check_email,
     send_email,
+    validate_email_code,
 )
 
 
@@ -68,5 +69,30 @@ class UtilsTestCase(TestCase):
                 "email": "test1@chosun.ac.kr",
                 "univName": "조선대학교",
                 "univ_check": True
+            }
+        )
+
+    @patch("requests.post")
+    def test_validate_code_success(self, mock_post):
+        # Mock 응답 설정
+        mock_response = Mock()
+        mock_response.json.return_value = {
+            "success": True,
+            "univName": "조선대학교"
+        }
+        mock_post.return_value = mock_response
+
+        # 이메일 인증 코드 검증
+        response = validate_email_code("test@chosun.ac.kr", "1234")
+        self.assertEqual(response.get("success"), True)
+
+        # 요청이 올바르게 구성되었는지 확인
+        mock_post.assert_called_once_with(
+            "https://univcert.com/api/v1/certifycode",
+            json={
+                "key": os.environ.get("UNIV_API_KEY"),
+                "email": "test@chosun.ac.kr",
+                "univName": "조선대학교",
+                "code": "1234"
             }
         )

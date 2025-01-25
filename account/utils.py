@@ -39,3 +39,24 @@ def send_email(email):
     print(f"send_validation_email: {payload}")
 
     return send_http_request("certify", payload)
+
+
+# 이메일 인증 코드 검증
+def validate_email_code(email, code):
+    payload = {
+        "key": API_KEY,
+        "email": email,
+        "univName": "조선대학교",
+        "code": code
+    }
+
+    print(f"validate_email_code: 인증 요청, email={email} code={code}")
+
+    return send_http_request("certifycode", payload)
+
+
+# 이메일 인증 내역 초기화
+def clear_email(email):
+    payload = {"key": API_KEY}
+    print(f"clear_user: {payload}")
+    return send_http_request(f"clear/{email}", payload)
