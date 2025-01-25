@@ -1,8 +1,9 @@
-from django.shortcuts import render
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
+from rest_framework.authtoken.models import Token
 from django.contrib.auth.hashers import make_password
+from django.contrib.auth import authenticate
 from account.forms import EmailForm, SignupForm
 from account.models import CustomUser
 import account.utils
@@ -74,3 +75,21 @@ def signup(request):
             return Response({"message": "회원가입 중 문제가 발생했습니다."}, status=500)
     else:
         return Response({"message": "유효하지 않은 입력입니다", "errors": form.errors},status=400)
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def login(request):
+    data = request.data
+
+    username = data.get('username')
+    password = data.get('password')
+
+    # 유저 인증
+    user = authenticate(request, username=username, password=password)
+
+    if user is not None:
+        token, created = Token.objects.get_or_create(user=user)
+        return Response({"message": "로그인 성공", "token": token.key}, status=200)
+    else:
+        return Response({"message": "아이디 또는 비밀번호가 잘못되었습니다."}, status=400)
