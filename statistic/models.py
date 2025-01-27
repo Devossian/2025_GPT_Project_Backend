@@ -4,6 +4,6 @@ from account.models import CustomUser
 # Create your models here.
 class UsageRecord(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='record')
-    used_model = models.CharField(null=False)
+    used_model = models.CharField(null=False, max_length=32)
     created_time = models.DateTimeField(auto_now_add=True)
     cost = models.IntegerField()
