@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'account', # 회원 기능
     'gpt_api', # 채팅 API 기능
     'chat', # 채팅 기능
+    'statistic', # 통계 기능
 ]
 
 MIDDLEWARE = [
