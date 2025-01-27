@@ -22,4 +22,5 @@ urlpatterns = [
     path('gpt-api/', include('gpt_api.urls')),
     path('',include('chat.urls')),
     path('stat/', include('statistic.urls')),
+    path('user/', include('account.urls')),
 ]
