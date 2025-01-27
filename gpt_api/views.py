@@ -8,6 +8,7 @@ import json
 from account.models import CustomUser
 from chat.models import ChatMessage, ChatRoom
 from .api_key_manager import acquire_api_key, release_api_key
+from statistic.models import UsageRecord
 import openai
 import time
 
@@ -67,6 +68,10 @@ class PostGPTAPI(APIView): #
                 # 잔고 차감
                 user.balance = user.balance - settings.MODEL_COST[model]
                 user.save()
+
+                # 사용 내역 저장
+                usage_record = UsageRecord.objects.create(user=user, model=model, cost=settings.MODEL_COST[model])
+                usage_record.save()
 
                 return Response({
                     'message': gpt_answer
