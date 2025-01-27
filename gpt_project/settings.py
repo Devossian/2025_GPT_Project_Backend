@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'gpt_project',
     'account', # 회원 기능
     'gpt_api', # 채팅 API 기능
+    'payment', # 결제 기능
 
 ]
 
