@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'rest_framework',
     'gpt_project',
     'account', # 회원 기능
     'gpt_api', # 채팅 API 기능
