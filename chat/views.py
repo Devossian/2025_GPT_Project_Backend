@@ -24,13 +24,10 @@ class MessageSerializer(serializers.ModelSerializer):
 class ChatRoomAPI(APIView):
     def get(self, request):
         query_params = request.query_params
-        userid = query_params.get('userid')
-        
-        if not userid:
-            return Response({"error":"userid가 필요합니다."}, status=400)
+        user = request.user
 
         # 채팅방 목록 받아오기
-        chatrooms = ChatRoom.objects.filter(user = userid).order_by('timestamp')
+        chatrooms = ChatRoom.objects.filter(user = user).order_by('timestamp')
         serializer = ChatRoomSerializer(chatrooms, many=True)
         return Response({'rooms':serializer.data}, status=200)
     
@@ -72,13 +69,12 @@ class CreateChatRoomAPI(APIView):
     def post(self, request):
         data = request.data
 
-        userid = data.get('userid')
         room_name = data.get('room_name','Untitled Room')
         try:
-            user = CustomUser.objects.get(id = userid)
+            user = request.user
             room = ChatRoom.objects.create(user=user, name=room_name)
             return Response({'message':'성공적으로 Room이 생성됐습니다.', 'roomid':str(room.roomid)}, status=201)
         except CustomUser.DoesNotExist:
-            return Response({'error':'해당 userid를 가진 user가 없습니다.'}, status=404)
+            return Response({'error':'회원정보를 조회 할 수 없습니다..'}, status=404)
         except Exception as e:
             return Response({'error':str(e)}, status=500)

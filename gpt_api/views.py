@@ -20,7 +20,7 @@ class PostGPTAPI(APIView): #
         roomid = data.get('roomid')
         room = ChatRoom.objects.get(roomid=roomid)
         # 그리고 유저 찾기
-        userid = room.user.id
+        userid = request.user.id
         timestamp = time.time()
 
         # 데이터 누락시 400에러
