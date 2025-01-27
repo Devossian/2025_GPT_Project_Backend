@@ -67,6 +67,7 @@ class RemoveChatRoomAPI(APIView):
         except Exception as e:
             return Response({'error':str(e)}, status=400)
 
+# 채팅방 생성 API
 class CreateChatRoomAPI(APIView):
     def post(self, request):
         data = request.data
