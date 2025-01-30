@@ -11,7 +11,6 @@ class ChatRoom(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     timestamp = models.DateTimeField(auto_now=True)
     messages = models.IntegerField(default=0)
-    history = models.TextField()
 
     def __str__(self):
         return f"{self.roomid},{self.name},{self.created_at},{self.timestamp},{self.messages}"
