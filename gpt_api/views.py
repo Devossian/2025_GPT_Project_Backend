@@ -70,7 +70,7 @@ class PostGPTAPI(APIView): #
                 user.save()
 
                 # 사용 내역 저장
-                usage_record = UsageRecord.objects.create(user=user, model=model, cost=settings.MODEL_COST[model])
+                usage_record = UsageRecord.objects.create(user=user, used_model=model, cost=settings.MODEL_COST[model])
                 usage_record.save()
 
                 return Response({
