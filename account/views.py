@@ -6,6 +6,7 @@ from django.contrib.auth.hashers import make_password
 from django.contrib.auth import authenticate
 from account.forms import EmailForm, SignupForm
 from account.models import CustomUser
+from account.utils import clear_email
 import account.utils
 
 
@@ -26,6 +27,8 @@ def send_email(request):
     form = EmailForm(data)
     if form.is_valid():
         email = form.cleaned_data['email']
+        if CustomUser.objects.get(email=email): # 임의 기재
+            return Response({"email": "이미 가입된 이메일입니다."}, status=400) # 임의 기재
         response = account.utils.send_email(email)
 
         if response.get("success"):
@@ -73,6 +76,8 @@ def signup(request):
                 print("인증서버 장애로 이메일 인증 내역 삭제 실패")
                 return Response({"message": "인증서버 장애로 문제가 발생했습니다. 관리자에게 문의해주세요"}, status=500)
             return Response({"message": "회원가입 중 문제가 발생했습니다."}, status=500)
+        finally: # 임의 기재
+            clear_email(email=email) # 임의 기재
     else:
         return Response({"message": "유효하지 않은 입력입니다", "errors": form.errors},status=400)
 
