@@ -66,7 +66,6 @@ def signup(request):
                 password=make_password(password),  # 비밀번호 암호화
                 balance=0.00
             )
-            account.utils.clear_email(email)  # 이메일 인증 내역 제거(제거 안할 시 이메일 인증이 다시 안됨)
             return Response({"message": "회원가입 성공"}, status=201)
         except Exception as e:
             print(e)
