@@ -8,8 +8,11 @@ import json
 from account.models import CustomUser
 from chat.models import ChatMessage, ChatRoom
 from .api_key_manager import acquire_api_key, release_api_key
+from statistic.models import UsageRecord
+from .history_manager import add_message_to_history, get_history, count_tokens, trim_history_if_needed
 import openai
 import time
+import itertools
 
 class PostGPTAPI(APIView): # 
     def post(self, request):
@@ -48,15 +51,18 @@ class PostGPTAPI(APIView): #
                 if user.balance < settings.MODEL_COST[model]:
                     return Response({'message': '잔고가 부족합니다.'}, status=403)
                 
+                # 과거 채팅 내역 불러오기
+                history = get_history(room)
+                messages = list(itertools.chain([{"role": "system", "content": "You are a helpful assistant."}],
+                                                history,
+                                                [{"role": "user", "content": message}]))
+                
                 # gpt api 호출
                 client = openai
                 client.api_key = api_key
                 completion = client.chat.completions.create(
                     model=model,
-                    messages=[
-                        {"role": "system", "content": "You are a helpful assistant."},
-                        {"role": "user", "content": message}
-                    ]
+                    messages=messages
                 )
                 gpt_answer = completion.choices[0].message.content.strip()
 
@@ -64,13 +70,22 @@ class PostGPTAPI(APIView): #
                 chatmessage = ChatMessage.objects.create(room=room, content=gpt_answer, senderid=0, timestamp=timestamp)
                 chatmessage.save()
 
+                # 채팅 내역 저장하기
+                add_message_to_history(room, 'user', message) # 사용자의 질문
+                add_message_to_history(room, 'assistant', gpt_answer) # gpt의 답변
+
                 # 잔고 차감
                 user.balance = user.balance - settings.MODEL_COST[model]
                 user.save()
 
+                # 사용 내역 저장
+                usage_record = UsageRecord.objects.create(user=user, model=model, cost=settings.MODEL_COST[model])
+                usage_record.save()
+
                 return Response({
                     'message': gpt_answer
                 }, status=200)
+            
         # 유저를 찾을 수 없는 경우
         except CustomUser.DoesNotExist:
             return Response({'message': '유저를 찾을 수 없습니다.'}, status=404)
@@ -83,6 +98,7 @@ class PostGPTAPI(APIView): #
         # 트랜젝션 문제거나, gpt api 호출에 문제가 생긴 경우
         except Exception as e:
             return Response({"message": str(e)}, status=400)
+        
         finally:
             # 사용한 api 키 반환
             release_api_key(api_key)
