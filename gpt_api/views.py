@@ -8,9 +8,11 @@ import json
 from account.models import CustomUser
 from chat.models import ChatMessage, ChatRoom
 from .api_key_manager import acquire_api_key, release_api_key
+from .history_manager import get_history, add_message_to_history
 from statistic.models import UsageRecord
 import openai
 import time
+import itertools
 
 class PostGPTAPI(APIView): # 
     def post(self, request):
@@ -49,21 +51,29 @@ class PostGPTAPI(APIView): #
                 if user.balance < settings.MODEL_COST[model]:
                     return Response({'message': '잔고가 부족합니다.'}, status=403)
                 
+                # 채팅 기억 불러오기
+                messages = list(itertools.chain(
+                    [{"role": "system", "content": "You are a helpful assistant."}],
+                    get_history(room=room),
+                    [{"role": "user", "content": message}]
+                ))
+                
                 # gpt api 호출
                 client = openai
                 client.api_key = api_key
                 completion = client.chat.completions.create(
                     model=model,
-                    messages=[
-                        {"role": "system", "content": "You are a helpful assistant."},
-                        {"role": "user", "content": message}
-                    ]
+                    messages=messages
                 )
                 gpt_answer = completion.choices[0].message.content.strip()
 
                 # 채팅 수신 기록 남기기
                 chatmessage = ChatMessage.objects.create(room=room, content=gpt_answer, senderid=0, timestamp=timestamp)
                 chatmessage.save()
+
+                # 채팅 기억 기록
+                add_message_to_history(room=room, role="user", content=message)
+                add_message_to_history(room=room, role="assistant", content=gpt_answer)
 
                 # 잔고 차감
                 user.balance = user.balance - settings.MODEL_COST[model]
