@@ -1,12 +1,40 @@
 import base64, requests, uuid, os
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
+from rest_framework import serializers
 from payment.models import Payment
 from django.core.cache import cache
+from drf_spectacular.utils import inline_serializer, extend_schema
 
 secret_key = os.environ.get('TOSS_SECRET_KEY')
 
-
+@extend_schema(
+    summary="결제 세션 생성",
+    description="사용자의 `custom_key`와 `amount`를 받아 결제 세션을 생성하고, `order_id`를 반환합니다.",
+    request=inline_serializer(
+        name="CreatePaymentRequest",
+        fields={
+            "amount": serializers.IntegerField(help_text="결제할 금액"),
+        }
+    ),
+    responses={
+        200: inline_serializer(
+            name="CreatePaymentResponse",
+            fields={
+                "message": serializers.CharField(help_text="응답 메시지"),
+                "custom_key": serializers.CharField(help_text="사용자의 결제 키"),
+                "order_id": serializers.UUIDField(help_text="결제 주문 ID"),
+            }
+        ),
+        400: inline_serializer(
+            name="BadRequestResponse",
+            fields={
+                "message": serializers.CharField(help_text="오류 메시지"),
+            }
+        )
+    }
+)
 @api_view(['POST'])
 def create_payment_session(request):
     custom_key = request.user.custom_key
@@ -36,11 +64,46 @@ def create_payment_session(request):
 
 # 결제 승인 호출하는 함수
 # @docs https://docs.tosspayments.com/guides/v2/payment-widget/integration#3-결제-승인하기
-@api_view(['GET'])
+@extend_schema(
+    summary="결제 승인",
+    description="`orderId`, `amount`, `paymentKey`를 이용해 Toss Payments 결제를 승인합니다.",
+    request=inline_serializer(
+        name="ConfirmPaymentRequest",
+        fields={
+            "orderId": serializers.CharField(help_text="주문 ID"),
+            "amount": serializers.IntegerField(help_text="결제 금액"),
+            "paymentKey": serializers.CharField(help_text="결제 키"),
+        }
+    ),
+    responses={
+        200: inline_serializer(
+            name="ConfirmPaymentResponse",
+            fields={
+                "message": serializers.CharField(help_text="결제 승인 성공 메시지"),
+            }
+        ),
+        400: inline_serializer(
+            name="BadRequestResponse",
+            fields={
+                "code": serializers.CharField(help_text="에러 코드"),
+                "message": serializers.CharField(help_text="에러 메시지"),
+            }
+        ),
+        500: inline_serializer(
+            name="ServerErrorResponse",
+            fields={
+                "message": serializers.CharField(help_text="결제 승인 후 데이터 저장 중 오류 발생"),
+            }
+        ),
+    }
+)
+@api_view(['POST'])
 def confirm(request):
-    orderId = request.GET.get('orderId')
-    amount = request.GET.get('amount')
-    paymentKey = request.GET.get('paymentKey')
+    json = request.data
+
+    orderId = json.get('orderId')
+    amount = json.get('amount')
+    paymentKey = json.get('paymentKey')
 
     if orderId is None or amount is None or paymentKey is None:
         return Response({"message": "요청 정보가 부족합니다"}, status=400)

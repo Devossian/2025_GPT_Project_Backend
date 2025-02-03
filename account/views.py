@@ -1,3 +1,6 @@
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema, inline_serializer, OpenApiParameter
+from rest_framework import serializers
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
@@ -8,7 +11,29 @@ from account.forms import EmailForm, SignupForm
 from account.models import CustomUser
 import account.utils
 
-
+@extend_schema(
+    summary="아이디 중복 확인",
+    description="입력한 `username`이 사용 가능한지 확인합니다.",
+    parameters=[
+        OpenApiParameter(
+            name="username",
+            type=OpenApiTypes.STR,
+            location=OpenApiParameter.QUERY,
+            required=True,
+            description="사용자 아이디"
+        ),
+    ],
+    responses={
+        200: inline_serializer(
+            name="UsernameAvailableResponse",
+            fields={"message": serializers.CharField(help_text="사용 가능 여부 메시지")}
+        ),
+        400: inline_serializer(
+            name="UsernameUnavailableResponse",
+            fields={"message": serializers.CharField(help_text="사용 불가 메시지")}
+        ),
+    }
+)
 @api_view(['GET'])
 @permission_classes([AllowAny])  # 인증 요구 비활성화
 def check_username(request):
@@ -18,7 +43,28 @@ def check_username(request):
     else:
         return Response({"message": "사용할 수 있는 아이디입니다"}, status=200)
 
-
+@extend_schema(
+    summary="이메일 인증 요청",
+    description="입력한 이메일로 인증 요청을 보냅니다.",
+    request=inline_serializer(
+        name="SendEmailRequest",
+        fields={"email": serializers.EmailField(help_text="이메일 주소")}
+    ),
+    responses={
+        200: inline_serializer(
+            name="SendEmailSuccessResponse",
+            fields={"message": serializers.CharField(help_text="이메일 요청 성공 메시지")}
+        ),
+        400: inline_serializer(
+            name="SendEmailFailureResponse",
+            fields={"message": serializers.CharField(help_text="이메일 요청 실패 메시지")}
+        ),
+        500: inline_serializer(
+            name="SendEmailServerErrorResponse",
+            fields={"message": serializers.CharField(help_text="외부 인증서버 오류 메시지")}
+        ),
+    }
+)
 @api_view(['POST'])
 @permission_classes([AllowAny])  # 인증 요구 비활성화
 def send_email(request):
@@ -38,6 +84,36 @@ def send_email(request):
         return Response({"message": form.errors['email'][0]}, status=400)
 
 
+@extend_schema(
+    summary="회원가입",
+    description="이메일 인증 후 `username`, `password`, `email`을 입력하여 회원가입을 수행합니다.",
+    request=inline_serializer(
+        name="SignupRequest",
+        fields={
+            "username": serializers.CharField(help_text="사용자 아이디"),
+            "password1": serializers.CharField(help_text="비밀번호"),
+            "email": serializers.EmailField(help_text="이메일 주소"),
+            "verification_code": serializers.CharField(help_text="이메일 인증 코드"),
+        }
+    ),
+    responses={
+        201: inline_serializer(
+            name="SignupSuccessResponse",
+            fields={"message": serializers.CharField(help_text="회원가입 성공 메시지")}
+        ),
+        400: inline_serializer(
+            name="SignupFailureResponse",
+            fields={
+                "message": serializers.CharField(help_text="입력 오류 메시지"),
+                "errors": serializers.DictField(help_text="입력 필드별 오류 상세 메시지"),
+            }
+        ),
+        500: inline_serializer(
+            name="SignupServerErrorResponse",
+            fields={"message": serializers.CharField(help_text="회원가입 중 서버 오류 메시지")}
+        ),
+    }
+)
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def signup(request):
@@ -76,7 +152,30 @@ def signup(request):
     else:
         return Response({"message": "유효하지 않은 입력입니다", "errors": form.errors},status=400)
 
-
+@extend_schema(
+    summary="로그인",
+    description="`username`과 `password`를 입력하여 로그인하고, 인증 토큰을 반환합니다.",
+    request=inline_serializer(
+        name="LoginRequest",
+        fields={
+            "username": serializers.CharField(help_text="사용자 아이디"),
+            "password": serializers.CharField(help_text="비밀번호"),
+        }
+    ),
+    responses={
+        200: inline_serializer(
+            name="LoginSuccessResponse",
+            fields={
+                "message": serializers.CharField(help_text="로그인 성공 메시지"),
+                "token": serializers.CharField(help_text="인증 토큰"),
+            }
+        ),
+        400: inline_serializer(
+            name="LoginFailureResponse",
+            fields={"message": serializers.CharField(help_text="로그인 실패 메시지")}
+        ),
+    }
+)
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def login(request):
