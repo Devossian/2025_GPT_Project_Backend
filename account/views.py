@@ -73,8 +73,6 @@ def send_email(request):
     form = EmailForm(data)
     if form.is_valid():
         email = form.cleaned_data['email']
-        if CustomUser.objects.get(email=email): # 임의 기재
-            return Response({"email": "이미 가입된 이메일입니다."}, status=400) # 임의 기재
         response = account.utils.send_email(email)
 
         if response.get("success"):

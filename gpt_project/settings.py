@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
     'corsheaders',
     'gpt_project',
+    'payment', # 결제 기능
     'account', # 회원 기능
     'chat', # 채팅 기능
     'statistic', # 통계 기능
