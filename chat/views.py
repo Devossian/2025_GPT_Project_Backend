@@ -1,6 +1,8 @@
 from django.shortcuts import render
 from django.db import transaction
 from django.shortcuts import get_object_or_404
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema, inline_serializer, OpenApiParameter
 from rest_framework.views import APIView
 from rest_framework import serializers
 from rest_framework.response import Response
@@ -21,6 +23,16 @@ class MessageSerializer(serializers.ModelSerializer):
         fields = ['senderid', 'content', 'timestamp']
     
 # 채팅방 조회 API
+@extend_schema(
+    summary="채팅방 목록 조회",
+    description="현재 로그인된 사용자의 채팅방 목록을 조회합니다.",
+    responses={
+        200: inline_serializer(
+            name="ChatRoomListResponse",
+            fields={"rooms": ChatRoomSerializer(many=True)}
+        ),
+    }
+)
 class ChatRoomAPI(APIView):
     def get(self, request):
         query_params = request.query_params
@@ -32,6 +44,33 @@ class ChatRoomAPI(APIView):
         return Response({'rooms':serializer.data}, status=200)
     
 # 채팅 이력 조회 API
+@extend_schema(
+    summary="채팅 메시지 조회",
+    description="채팅방의 메시지 목록을 조회합니다.",
+    parameters=[
+        OpenApiParameter(
+            name="roomid",
+            type=OpenApiTypes.UUID,
+            location=OpenApiParameter.QUERY,
+            required=True,
+            description="조회할 채팅방 ID"
+        ),
+    ],
+    responses={
+        200: inline_serializer(
+            name="ChatMessagesResponse",
+            fields={"messages": MessageSerializer(many=True)}
+        ),
+        400: inline_serializer(
+            name="BadRequestResponse",
+            fields={"error": serializers.CharField(help_text="오류 메시지")}
+        ),
+        404: inline_serializer(
+            name="NotFoundResponse",
+            fields={"error": serializers.CharField(help_text="채팅방을 찾을 수 없음")}
+        ),
+    }
+)
 class ChatMessagesAPI(APIView):
     def get(self, request):
         query_params = request.query_params
@@ -47,6 +86,33 @@ class ChatMessagesAPI(APIView):
         return Response({'messages':serializer.data}, status=200)
 
 # 채팅방 삭제 API
+@extend_schema(
+    summary="채팅방 삭제",
+    description="채팅방을 삭제합니다. 사용자는 자신이 생성한 채팅방만 삭제할 수 있습니다.",
+    parameters=[
+        OpenApiParameter(
+            name="roomid",
+            type=OpenApiTypes.UUID,
+            location=OpenApiParameter.PATH,
+            required=True,
+            description="삭제할 채팅방 ID"
+        ),
+    ],
+    responses={
+        200: inline_serializer(
+            name="DeleteChatRoomResponse",
+            fields={"message": serializers.CharField(help_text="삭제 성공 메시지")}
+        ),
+        403: inline_serializer(
+            name="ForbiddenResponse",
+            fields={"error": serializers.CharField(help_text="삭제 권한 없음")}
+        ),
+        404: inline_serializer(
+            name="NotFoundResponse",
+            fields={"error": serializers.CharField(help_text="채팅방을 찾을 수 없음")}
+        ),
+    }
+)
 class RemoveChatRoomAPI(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -65,6 +131,33 @@ class RemoveChatRoomAPI(APIView):
             return Response({'error':str(e)}, status=400)
 
 # 채팅방 생성 API
+@extend_schema(
+    summary="채팅방 생성",
+    description="새로운 채팅방을 생성합니다.",
+    request=inline_serializer(
+        name="CreateChatRoomRequest",
+        fields={
+            "room_name": serializers.CharField(help_text="채팅방 이름", required=False, default="Untitled Room"),
+        }
+    ),
+    responses={
+        201: inline_serializer(
+            name="CreateChatRoomResponse",
+            fields={
+                "message": serializers.CharField(help_text="생성 성공 메시지"),
+                "roomid": serializers.UUIDField(help_text="생성된 채팅방 ID"),
+            }
+        ),
+        404: inline_serializer(
+            name="UserNotFoundResponse",
+            fields={"error": serializers.CharField(help_text="사용자 정보 조회 실패")}
+        ),
+        500: inline_serializer(
+            name="ServerErrorResponse",
+            fields={"error": serializers.CharField(help_text="서버 내부 오류")}
+        ),
+    }
+)
 class CreateChatRoomAPI(APIView):
     def post(self, request):
         data = request.data

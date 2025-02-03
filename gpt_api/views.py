@@ -2,6 +2,8 @@ from django.shortcuts import render
 from django.conf import settings
 from django.db import transaction
 from django.db.models import F
+from drf_spectacular.utils import inline_serializer, extend_schema
+from rest_framework import serializers
 from rest_framework.views import APIView
 from rest_framework.response import Response
 import json
@@ -14,7 +16,57 @@ import openai
 import time
 import itertools
 
-class PostGPTAPI(APIView): # 
+class PostGPTAPI(APIView):
+    @extend_schema(
+        summary="GPT 채팅 API",
+        description="유저가 GPT 모델에 메시지를 전송하고 응답을 받습니다. 유저의 잔고에서 해당 모델의 비용이 차감됩니다.",
+        request=inline_serializer(
+            name="GPTChatRequest",
+            fields={
+                "message": serializers.CharField(help_text="사용자가 GPT에게 보낼 메시지"),
+                "model": serializers.CharField(help_text="사용할 GPT 모델 (예: gpt-3.5-turbo)"),
+                "roomid": serializers.UUIDField(help_text="채팅방 ID"),
+            }
+        ),
+        responses={
+            200: inline_serializer(
+                name="GPTChatResponse",
+                fields={
+                    "message": serializers.CharField(help_text="GPT의 응답 메시지"),
+                }
+            ),
+            400: inline_serializer(
+                name="BadRequestResponse",
+                fields={
+                    "message": serializers.CharField(help_text="요청이 잘못되었습니다"),
+                }
+            ),
+            401: inline_serializer(
+                name="AuthenticationErrorResponse",
+                fields={
+                    "message": serializers.CharField(help_text="API 인증 오류 발생"),
+                }
+            ),
+            403: inline_serializer(
+                name="InsufficientBalanceResponse",
+                fields={
+                    "message": serializers.CharField(help_text="잔고 부족"),
+                }
+            ),
+            404: inline_serializer(
+                name="UserNotFoundResponse",
+                fields={
+                    "message": serializers.CharField(help_text="유저를 찾을 수 없습니다"),
+                }
+            ),
+            429: inline_serializer(
+                name="RateLimitErrorResponse",
+                fields={
+                    "message": serializers.CharField(help_text="API 요청 제한 초과"),
+                }
+            ),
+        }
+    )
     def post(self, request):
         data = json.loads(request.body)
         message  = data.get('message')

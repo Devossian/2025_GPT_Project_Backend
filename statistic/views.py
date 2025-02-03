@@ -1,4 +1,6 @@
 from django.shortcuts import render
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import serializers
@@ -11,6 +13,34 @@ class UsageRecordSerializer(serializers.ModelSerializer):
         fields = ['used_model','cost','created_time']
 
 # Create your views here.
+@extend_schema(
+    summary="사용 기록 조회",
+    description="로그인한 사용자의 GPT 모델 사용 내역을 조회합니다. 날짜 범위를 지정할 수 있습니다.",
+    parameters=[
+        OpenApiParameter(
+            name="start-date",
+            type=OpenApiTypes.DATETIME,
+            location=OpenApiParameter.QUERY,
+            required=False,
+            description="조회 시작 날짜 (ISO 8601 형식: YYYY-MM-DDTHH:MM:SS, 기본값: 2025-01-01T00:00:00)"
+        ),
+        OpenApiParameter(
+            name="end-date",
+            type=OpenApiTypes.DATETIME,
+            location=OpenApiParameter.QUERY,
+            required=False,
+            description="조회 종료 날짜 (ISO 8601 형식: YYYY-MM-DDTHH:MM:SS, 기본값: 오늘 날짜)"
+        ),
+    ],
+    responses={
+        200: UsageRecordSerializer(many=True),
+        500: serializers.Serializer(
+            {
+                "error": serializers.CharField(help_text="서버 내부 오류 메시지"),
+            }
+        ),
+    }
+)
 class CheckUsage(APIView):
     def get(self, request):
         query_params = request.query_params
