@@ -9,7 +9,7 @@ https://docs.djangoproject.com/en/5.1/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.1/ref/settings/
 """
-
+import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -96,15 +96,17 @@ DATABASES = {
     }
 }
 
+REDIS_HOST = os.getenv('REDIS_HOST')
+REDIS_PORT = os.getenv('REDIS_PORT')
+REDIS_PASSWORD = os.getenv('REDIS_PASSWORD')
 CACHES = {
     "default" : {
         "BACKEND" : "django_redis.cache.RedisCache",
-        "LOCATION" : "redis:6379",
+        "LOCATION" : f"redis://:{REDIS_PASSWORD}@{REDIS_HOST}:{REDIS_PORT}/0",
         "OPTION" : {
             "CLIENT_CLASS" : "django_redis.client.DefaultClient",
         }
     }
-
 }
 
 REST_FRAMEWORK = {
