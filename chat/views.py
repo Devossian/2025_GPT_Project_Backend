@@ -37,9 +37,10 @@ class ChatRoomAPI(APIView):
     def get(self, request):
         query_params = request.query_params
         user = request.user
+        roomid = query_params.get('roomid')
 
         # 채팅방 목록 받아오기
-        chatrooms = ChatRoom.objects.filter(user = user).order_by('timestamp')
+        chatrooms = ChatRoom.objects.filter(user = user, roomid=roomid).order_by('timestamp')
         serializer = ChatRoomSerializer(chatrooms, many=True)
         return Response({'rooms':serializer.data}, status=200)
     
