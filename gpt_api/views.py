@@ -81,6 +81,9 @@ class PostGPTAPI(APIView):
         # 데이터 누락시 400에러
         if not userid or not message or not model:
             return Response({'message': '누락된 parameter가 있습니다.'}, status=400)
+        # 원래 사용자가 아닐 시 403에러
+        if request.user!=room.user:
+            return Response({'message': '허가된 사용자가 아닙니다.'}, status=403)
         
         # 채팅 송신 기록 남기기
         chatmessage = ChatMessage.objects.create(room=room, content=message, senderid=userid, timestamp=timestamp)
