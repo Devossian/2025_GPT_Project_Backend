@@ -6,6 +6,7 @@ from rest_framework import serializers
 from payment.models import Payment
 from django.core.cache import cache
 from drf_spectacular.utils import inline_serializer, extend_schema
+from django.utils import timezone
 
 secret_key = os.environ.get('TOSS_SECRET_KEY')
 
@@ -154,7 +155,7 @@ def handle_response(request, resjson, status_code):
                 order_id=resjson.get("orderId"),
                 amount=resjson.get("totalAmount"),
                 payment_key=resjson.get("paymentKey"),
-                approved_at=resjson.get("approvedAt"),
+                approved_at=timezone.now(),
             )
 
             return Response({"message": "결제 승인에 성공했습니다"}, status=200)
