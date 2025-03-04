@@ -5,6 +5,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
 from rest_framework.authtoken.models import Token
+from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth import authenticate
 from account.forms import EmailForm, SignupForm
@@ -179,6 +180,7 @@ def signup(request):
         ),
     }
 )
+
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def login(request):
@@ -191,7 +193,11 @@ def login(request):
     user = authenticate(request, username=username, password=password)
 
     if user is not None:
-        token, created = Token.objects.get_or_create(user=user)
-        return Response({"message": "로그인 성공", "token": token.key}, status=200)
+        refresh = RefreshToken.for_user(user)
+        access_token = str(refresh.access_token)
+        return Response(
+            {"message": "로그인 성공", "access": access_token, "refresh": str(refresh)},
+            status=200
+        )
     else:
         return Response({"message": "아이디 또는 비밀번호가 잘못되었습니다."}, status=400)
