@@ -195,8 +195,9 @@ def login(request):
     if user is not None:
         refresh = RefreshToken.for_user(user)
         access_token = str(refresh.access_token)
+        print(access_token)
         return Response(
-            {"message": "로그인 성공", "access": access_token, "refresh": str(refresh)},
+            {"message": "로그인 성공", "token": access_token, "refresh": str(refresh)},
             status=200
         )
     else:
