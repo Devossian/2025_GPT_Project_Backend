@@ -36,6 +36,7 @@ import account.utils
         ),
     }
 )
+
 @api_view(['GET'])
 @permission_classes([AllowAny])  # 인증 요구 비활성화
 def check_username(request):
@@ -67,6 +68,7 @@ def check_username(request):
         ),
     }
 )
+
 @api_view(['POST'])
 @permission_classes([AllowAny])  # 인증 요구 비활성화
 def send_email(request):
@@ -202,3 +204,13 @@ def login(request):
         )
     else:
         return Response({"message": "아이디 또는 비밀번호가 잘못되었습니다."}, status=400)
+
+@api_view(['GET'])
+@permission_classes([AllowAny])  # 인증 요구 비활성화
+def user_info(request): # 임의로 작성한 User 정보 get 요청 api
+    username = request.GET.get("username")
+    try :
+        user = CustomUser.bjects.get(username=username)
+        return Response({"username": user.username, "balance": user.balance}, status=200)
+    except Exception as e :
+        return Response({"message": str(e)})
