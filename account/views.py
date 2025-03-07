@@ -199,7 +199,7 @@ def login(request):
         access_token = str(refresh.access_token)
         print(access_token)
         return Response(
-            {"message": "로그인 성공", "token": access_token, "refresh": str(refresh)},
+            {"message": "로그인 성공", "token": access_token, "refresh": str(refresh), "username": username},
             status=200
         )
     else:
