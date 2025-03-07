@@ -3,7 +3,7 @@ from drf_spectacular.utils import extend_schema, inline_serializer, OpenApiParam
 from rest_framework import serializers
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.authtoken.models import Token
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth.hashers import make_password
@@ -206,7 +206,7 @@ def login(request):
         return Response({"message": "아이디 또는 비밀번호가 잘못되었습니다."}, status=400)
 
 @api_view(['GET'])
-@permission_classes([AllowAny])  # 인증 요구 비활성화
+@permission_classes([IsAuthenticated])  # 인증 요구 비활성화
 def user_info(request): # 임의로 작성한 User 정보 get 요청 api
     username = request.GET.get("username")
     try :
