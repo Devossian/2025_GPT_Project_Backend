@@ -5,12 +5,18 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import serializers
 from statistic.models import UsageRecord
+from payment.models import Payment
 from datetime import datetime
 
 class UsageRecordSerializer(serializers.ModelSerializer):
     class Meta:
         model = UsageRecord
         fields = ['used_model','cost','created_time']
+
+class ChargeRecordSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Payment
+        fields = ['amount','approved_at']
 
 # Create your views here.
 @extend_schema(
@@ -41,7 +47,7 @@ class UsageRecordSerializer(serializers.ModelSerializer):
         ),
     }
 )
-class CheckUsage(APIView):
+class CheckUsage(APIView): # 사용 내역 조회
     def get(self, request):
         query_params = request.query_params
         start_date = query_params.get('start-date', '2025-01-01T00:00:00')
@@ -64,5 +70,31 @@ class CheckUsage(APIView):
             serializer = UsageRecordSerializer(records, many=True)
             
             return Response({'records':serializer.data},status=200)
+        except Exception as e:
+            return Response({'error',str(e)}, status=500)
+        
+class CheckCharge(APIView): # 충전 내역 조회
+    def get(self, request):
+        query_params = request.query_params
+        start_date = query_params.get('start-date', '2025-01-01T00:00:00')
+        start_datetime = datetime.strptime(start_date, '%Y-%m-%dT%H:%M:%S')
+        end_date = query_params.get('end-date')
+        # end_date 안주어지면 오늘 날짜로
+        if not end_date:
+            end_datetime = datetime.now()
+        else:
+            end_datetime = datetime.strptime(end_date, '%Y-%m-%dT%H:%M:%S')
+        print(start_datetime, end_datetime)
+
+        try:
+            # 유저 정보 이용하여 충전 레코드 조회(start_datetime과 end_datetime 사이)
+            user = request.user
+            charges = user.payment.filter(
+                approved_at__gte=start_datetime,
+                approved_at__lte=end_datetime
+            ).order_by('approved_at')
+            serializer = ChargeRecordSerializer(charges, many=True)
+            
+            return Response({'charges':serializer.data},status=200)
         except Exception as e:
             return Response({'error',str(e)}, status=500)

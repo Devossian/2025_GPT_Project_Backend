@@ -7,4 +7,4 @@ class Payment(models.Model):
     order_id = models.CharField(max_length=64, unique=True)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     payment_key = models.CharField(max_length=200)
-    approved_at = models.DateTimeField()
+    approved_at = models.DateTimeField(auto_now_add=True)
