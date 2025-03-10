@@ -199,7 +199,7 @@ def login(request):
         access_token = str(refresh.access_token)
         print(access_token)
         return Response(
-            {"message": "로그인 성공", "token": access_token, "refresh": str(refresh)},
+            {"message": "로그인 성공", "token": access_token, "refresh": str(refresh), "username": username},
             status=200
         )
     else:
@@ -210,7 +210,7 @@ def login(request):
 def user_info(request): # 임의로 작성한 User 정보 get 요청 api
     username = request.GET.get("username")
     try :
-        user = CustomUser.bjects.get(username=username)
+        user = CustomUser.objects.get(username=username)
         return Response({"username": user.username, "balance": user.balance}, status=200)
     except Exception as e :
         return Response({"message": str(e)})

@@ -139,7 +139,7 @@ class PostGPTAPI(APIView):
                 usage_record.save()
 
                 return Response({
-                    'message': gpt_answer
+                    'message': gpt_answer, 'balance': user.balance,
                 }, status=200)
         # 유저를 찾을 수 없는 경우
         except CustomUser.DoesNotExist:

@@ -6,5 +6,5 @@ urlpatterns = [
     path('send-email', views.send_email, name='send_email'),
     path('signup', views.signup, name='signup'),
     path('login', views.login, name='login'),
-    path('user-info', views.user_info, name='user_info'),
+    path('user-info/', views.user_info, name='user_info'),
 ]
