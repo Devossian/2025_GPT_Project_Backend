@@ -162,7 +162,7 @@ def handle_response(request, resjson, status_code):
                 )
 
                 # 잔고 증가
-                user = CustomUser.objects.get(user=request.user)
+                user = CustomUser.objects.get(username=request.user)
                 user.balance += resjson.get('totalAmount')
                 user.save()
 
