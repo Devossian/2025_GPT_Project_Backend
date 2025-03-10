@@ -4,9 +4,11 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework import serializers
 from payment.models import Payment
+from account.models import CustomUser
 from django.core.cache import cache
 from drf_spectacular.utils import inline_serializer, extend_schema
 from django.utils import timezone
+from django.db import transaction
 
 secret_key = os.environ.get('TOSS_SECRET_KEY')
 
@@ -149,16 +151,22 @@ def handle_response(request, resjson, status_code):
     user = request.user
     if status_code == 200:
         try:
-            # 성공 결제 정보 저장
-            Payment.objects.create(
-                user=user,
-                order_id=resjson.get("orderId"),
-                amount=resjson.get("totalAmount"),
-                payment_key=resjson.get("paymentKey"),
-                approved_at=timezone.now(),
-            )
+            with transaction.atomic(): # 트랜젝션 원자성 보장
+                # 성공 결제 정보 저장
+                Payment.objects.create(
+                    user=user,
+                    order_id=resjson.get("orderId"),
+                    amount=resjson.get("totalAmount"),
+                    payment_key=resjson.get("paymentKey"),
+                    approved_at=timezone.now(),
+                )
 
-            return Response({"message": "결제 승인에 성공했습니다"}, status=200)
+                # 잔고 증가
+                user = CustomUser.objects.get(user=request.user)
+                user.balance += resjson.get('totalAmount')
+                user.save()
+
+                return Response({"message": "결제 승인에 성공했습니다"}, status=200)
         except Exception as e:
             print("결제 정보 저장 실패: paymentKey: ", resjson.get("paymentKey"))
             print("결제 정보 저장 실패: order_id: ", resjson.get("orderId"))
